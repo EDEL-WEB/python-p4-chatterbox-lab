@@ -1,36 +1,32 @@
 from datetime import datetime
 
-from server.app import app  # update to correct import if needed
-from server.models import db, Message  # ensure correct path to models
+from app import app
+from models import db, Message
 
 class TestMessage:
     '''Message model in models.py'''
 
-    def setup_method(self):
-        '''Push app context and clear test messages'''
-        self.app_context = app.app_context()
-        self.app_context.push()
+    with app.app_context():
+        m = Message.query.filter(
+            Message.body == "Hello 👋"
+            ).filter(Message.username == "Liza")
 
-        Message.query.filter_by(username="Liza", body="Hello 👋").delete()
+        for message in m:
+            db.session.delete(message)
+
         db.session.commit()
-
-    def teardown_method(self):
-        '''Pop app context after each test'''
-        db.session.remove()
-        self.app_context.pop()
 
     def test_has_correct_columns(self):
         '''has columns for message body, username, and creation time.'''
-        hello_from_liza = Message(
-            body="Hello 👋",
-            username="Liza"
-        )
-        db.session.add(hello_from_liza)
-        db.session.commit()
+        with app.app_context():
 
-        assert hello_from_liza.body == "Hello 👋"
-        assert hello_from_liza.username == "Liza"
-        assert isinstance(hello_from_liza.created_at, datetime)
+            hello_from_liza = Message(
+                body="Hello 👋",
+                username="Liza")
+            
+            db.session.add(hello_from_liza)
+            db.session.commit()
 
-        db.session.delete(hello_from_liza)
-        db.session.commit()
+            assert(hello_from_liza.body == "Hello 👋")
+            assert(hello_from_liza.username == "Liza")
+            assert(type(hello_from_liza.created_at) == datetime)
